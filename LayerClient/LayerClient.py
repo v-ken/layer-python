@@ -143,7 +143,10 @@ class PlatformClient(object):
         )
 
         if result.ok:
-            return result.json()
+            try:
+                return result.json()
+            except ValueError:
+                return result.status_code
 
         try:
             error = result.json()
@@ -220,6 +223,37 @@ class PlatformClient(object):
                     'metadata': metadata,
                 }
             )
+        )
+
+    def add_participant_to_conversation(self, participant, conversation_uuid):
+        """
+        Add a single participant to a converstaion.
+
+        Parameters:
+        - `participant`: A single participant ID (string)
+        - `conversation_uuid`: UUID of the conversation
+        - `metadata`: Unstructured data to be passed through to the client.
+            This data must be json-serializable.
+
+        Return: Status code
+        """
+        uri = self._get_layer_uri(
+                LAYER_URI_CONVERSATIONS,
+            ) + '/' + str(conversation_uuid).split('/')[-1]
+
+        print uri
+        return self._raw_request(
+            METHOD_POST,
+            uri,
+            [{
+                'operation': 'add',
+                'property': 'participants',
+                'value': str(participant)
+            }],
+            extra_headers={
+                'Content-Type': 'application/vnd.layer-patch+json',
+                'X-HTTP-Method-Override': 'PATCH'
+            }
         )
 
     def prepare_rich_content(self, conversation, content_type, content_size):
